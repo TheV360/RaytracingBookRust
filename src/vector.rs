@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, Mul, Div};
+use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::fmt;
 
 pub type Float = f64;
@@ -37,6 +37,12 @@ impl Div<Float> for Vec3 {
 	type Output = Self;
 	fn div(self, other: Float) -> Self::Output {
 		Vec3 { x: self.x / other, y: self.y / other, z: self.z / other, }
+	}
+}
+impl Neg for Vec3 {
+	type Output = Self;
+	fn neg(self) -> Self::Output {
+		Vec3 { x: -self.x, y: -self.y, z: -self.z }
 	}
 }
 impl Vec3 {

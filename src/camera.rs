@@ -1,6 +1,7 @@
 use crate::vector::*;
 use crate::ray::*;
 
+#[derive(Copy, Clone, PartialOrd, PartialEq)]
 pub struct Camera {
 	pub origin: Point3,
 	pub lower_left_corner: Point3,
