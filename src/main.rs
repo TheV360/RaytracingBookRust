@@ -1,17 +1,20 @@
 use std::time::{Duration, Instant};
 use std::io::{self, Write};
-use std::thread::sleep;
 
 use image::{RgbImage, Rgb};
+
+use rand::prelude::*;
 
 //////////////////
 
 mod vector;
 mod ray;
+mod camera;
 mod sphere;
 
 use vector::*;
 use ray::*;
+use camera::*;
 use sphere::*;
 
 //////////////////
@@ -19,6 +22,8 @@ use sphere::*;
 const WIDTH: usize = 512;
 const HEIGHT: usize = 512;
 const ASPECT_RATIO: Float = (WIDTH as Float) / (HEIGHT as Float);
+
+const SAMPLES_PER_PIXEL: usize = 32;
 
 const PROGRESS_BAR_CHARS: usize = 32;
 
@@ -34,33 +39,17 @@ fn ray_color(world: &Vec<Box<dyn RayHits>>, ray: Ray) -> Color {
 }
 
 fn main() {
+	let mut rng = thread_rng();
+	
 	let mut image = RgbImage::new(WIDTH as u32, HEIGHT as u32);
 	let start_of_op = Instant::now();
 	
-	let viewport_height = 2.0;
-	let viewport_width = ASPECT_RATIO * viewport_height;
-	let focal_length = 1.0;
-	
-	let origin = Point3::ZERO;
-	let horizontal = Vec3::new_x(viewport_width);
-	let vertical = Vec3::new_y(viewport_height);
-	let lower_left_corner = origin - horizontal/2.0 - vertical/2.0 - Vec3::new_z(focal_length);
-	
-	let mut world: Vec<Box<dyn RayHits>> = vec![
+	let world: Vec<Box<dyn RayHits>> = vec![
 		Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)),
 		Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0))
 	];
 	
-	/*for i in -3isize..=3 {
-		for j in -3isize..=3 {
-			world.push(Box::new(
-				Sphere::new(
-					Vec3::new(i as Float * 3.0, j as Float * 3.0, -(5 + i.abs() + j.abs()) as Float),
-					0.5
-				)
-			));
-		}
-	}*/
+	let camera = Camera::new(Vec3::ZERO, ASPECT_RATIO, 2.0, 1.0);
 	
 	for y in (0..HEIGHT).rev() {
 		let percent_done = 1.0 - ((y as Float) / (HEIGHT as Float));
@@ -69,15 +58,18 @@ fn main() {
 		io::stderr().flush().ok().expect("fuck whoops");
 		
 		for x in 0..WIDTH {
-			let u = (x as Float) / (WIDTH as Float);
-			let v = 1.0 - ((y as Float) / (HEIGHT as Float));
+			let mut pixel_color = Color::ZERO;
 			
-			let r = Ray::new(origin, (lower_left_corner + u * horizontal + v * vertical - origin).normalize());
-			// let r = Ray::new(origin, lower_left_corner + u * horizontal + v * vertical - origin);
-			let pixel_color = ray_color(&world, r);
+			for _s in 0..SAMPLES_PER_PIXEL {
+				let u = ((x as Float) + rng.gen::<Float>()) / (WIDTH as Float);
+				let v = 1.0 - (((y as Float) + rng.gen::<Float>()) / (HEIGHT as Float));
+				
+				let r = camera.get_ray(u, v);
+				pixel_color = pixel_color + ray_color(&world, r);
+			}
 			
 			// And then write the color.
-			image.put_pixel(x as u32, y as u32, Rgb(pixel_color.into()));
+			image.put_pixel(x as u32, y as u32, Rgb((pixel_color / SAMPLES_PER_PIXEL as Float).into()));
 		}
 	}
 	let duration = start_of_op.elapsed();
