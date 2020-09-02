@@ -5,7 +5,9 @@ pub type Float = f64;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq)]
 pub struct Vec3 {
-	pub x: Float, pub y: Float, pub z: Float,
+	pub x: Float,
+	pub y: Float,
+	pub z: Float,
 }
 impl Add for Vec3 {
 	type Output = Self;
@@ -40,10 +42,24 @@ impl Div<Float> for Vec3 {
 impl Vec3 {
 	pub const ZERO: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
 	
-	fn dot(self, other: Self) -> Float {
+	pub fn new(x: Float, y: Float, z: Float) -> Self {
+		Vec3 { x, y, z }
+	}
+	
+	pub fn new_x(x: Float) -> Self {
+		Vec3 { x, y: 0.0, z: 0.0 }
+	}
+	pub fn new_y(y: Float) -> Self {
+		Vec3 { x: 0.0, y, z: 0.0 }
+	}
+	pub fn new_z(z: Float) -> Self {
+		Vec3 { x: 0.0, y: 0.0, z }
+	}
+	
+	pub fn dot(self, other: Self) -> Float {
 		self.x * other.x + self.y * other.y + self.z * other.z
 	}
-	fn cross(self, other: Self) -> Self {
+	pub fn cross(self, other: Self) -> Self {
 		Vec3 {
 			x: self.y * other.z - self.z * other.y,
 			y: self.z * other.x - self.x * other.z,
@@ -51,14 +67,30 @@ impl Vec3 {
 		}
 	}
 	
-	fn squared_magnitude(self) -> Float {
+	/// Get the squared length of a vector. Cheaper to compute than `magnitude`.
+	/// Useful for when you only need to know if one length is greater than the other, etc.
+	pub fn squared_magnitude(self) -> Float {
 		self.x.powi(2) + self.y.powi(2) + self.z.powi(2)
 	}
-	fn magnitude(self) -> Float {
+	
+	/// Get the length of a vector.
+	pub fn magnitude(self) -> Float {
 		self.squared_magnitude().sqrt()
 	}
-	fn normalize(self) -> Self {
+	
+	/// Normalize a vector, making it a unit vector.
+	pub fn normalize(self) -> Self {
 		self / self.magnitude()
+	}
+	
+	/// This will project the vector `self` onto the vector `other`.
+	pub fn project(self, other: Self) -> Self {
+		(other.dot(self) / other.magnitude()) * other
+	}
+	
+	// TODO: make this generic???
+	pub fn lerp(self, other: Self, t: Float) -> Self {
+		self * t + other * (1.0 - t)
 	}
 }
 
