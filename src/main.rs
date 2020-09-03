@@ -108,8 +108,8 @@ fn main() {
 			let mut pixel_color = Color::ZERO;
 			
 			for _s in 0..SAMPLES_PER_PIXEL {
-				let u = ((x as Float) + rng.gen::<Float>()) / (WIDTH as Float);
-				let v = 1.0 - (((y as Float) + rng.gen::<Float>()) / (HEIGHT as Float));
+				let u = (x as Float + rng.gen::<Float>()) / WIDTH as Float;
+				let v = 1.0 - ((y as Float + rng.gen::<Float>()) / HEIGHT as Float);
 				
 				let r = camera.get_ray(u, v);
 				pixel_color = pixel_color + ray_color(&world, r, 0, DiffuseMode::Hemisphere);

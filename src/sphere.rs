@@ -25,22 +25,24 @@ impl RayHits for Sphere {
 		if discriminant > 0.0 {
 			let disc_root = Float::sqrt(discriminant);
 			
-			let tmp = (-half_b - disc_root) / a;
-			if t_range.contains(&tmp) {
-				let t = tmp;
+			// TODO: this is a bit ugly. I want some way to write this once for both signs.
+			
+			let t = (-half_b - disc_root) / a;
+			if t_range.contains(&t) {
 				let position = ray.at(t);
-				let normal = (position - self.center) / self.radius;
+				let (front_face, normal) =
+					RayHitInfo::get_face_normal_info(ray, (position - self.center) / self.radius);
 				
-				return Some(RayHitInfo { position, normal, t });
+				return Some(RayHitInfo { position, normal, t, front_face });
 			}
 			
-			let tmp = (-half_b + disc_root) / a;
-			if t_range.contains(&tmp) {
-				let t = tmp;
+			let t = (-half_b + disc_root) / a;
+			if t_range.contains(&t) {
 				let position = ray.at(t);
-				let normal = (position - self.center) / self.radius;
+				let (front_face, normal) =
+					RayHitInfo::get_face_normal_info(ray, (position - self.center) / self.radius);
 				
-				return Some(RayHitInfo { position, normal, t });
+				return Some(RayHitInfo { position, normal, t, front_face });
 			}
 		}
 		
