@@ -18,7 +18,7 @@ impl Camera {
 		let vertical = Vec3::new_y(viewport_height);
 		let lower_left_corner = origin - horizontal/2.0 - vertical/2.0 - Vec3::new_z(focal_length);
 		
-		Camera { origin, lower_left_corner, horizontal, vertical, }
+		Self { origin, lower_left_corner, horizontal, vertical, }
 	}
 	
 	/// Gets a normalized ray from the Camera's view.

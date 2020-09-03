@@ -20,46 +20,46 @@ pub struct Vec3 {
 impl ops::Neg for Vec3 {
 	type Output = Self;
 	fn neg(self) -> Self::Output {
-		Vec3 { x: -self.x, y: -self.y, z: -self.z }
+		Self { x: -self.x, y: -self.y, z: -self.z }
 	}
 }
 
 impl ops::Add for Vec3 {
 	type Output = Self;
 	fn add(self, other: Self) -> Self::Output {
-		Vec3 { x: self.x + other.x, y: self.y + other.y, z: self.z + other.z, }
+		Self { x: self.x + other.x, y: self.y + other.y, z: self.z + other.z, }
 	}
 }
 
 impl ops::Sub for Vec3 {
 	type Output = Self;
 	fn sub(self, other: Self) -> Self::Output {
-		Vec3 { x: self.x - other.x, y: self.y - other.y, z: self.z - other.z, }
+		Self { x: self.x - other.x, y: self.y - other.y, z: self.z - other.z, }
 	}
 }
 
 impl ops::Mul<Float> for Vec3 {
 	type Output = Self;
 	fn mul(self, other: Float) -> Self::Output {
-		Vec3 { x: self.x * other, y: self.y * other, z: self.z * other, }
+		Self { x: self.x * other, y: self.y * other, z: self.z * other, }
 	}
 }
 impl ops::Mul<Vec3> for Float {
 	type Output = Vec3;
 	fn mul(self, other: Vec3) -> Self::Output { other * self }
 }
-impl ops::Mul<Vec3> for Vec3 {
+impl ops::Mul for Vec3 {
 	type Output = Self;
 	/// This will cause a bit of confusion. This is a naive "multiply each component with its counterpart" thing.
-	fn mul(self, other: Vec3) -> Self::Output {
-		Vec3 { x: self.x * other.x, y: self.y * other.y, z: self.z * other.z, }
+	fn mul(self, other: Self) -> Self::Output {
+		Self { x: self.x * other.x, y: self.y * other.y, z: self.z * other.z, }
 	}
 }
 
 impl ops::Div<Float> for Vec3 {
 	type Output = Self;
 	fn div(self, other: Float) -> Self::Output {
-		Vec3 { x: self.x / other, y: self.y / other, z: self.z / other, }
+		Self { x: self.x / other, y: self.y / other, z: self.z / other, }
 	}
 }
 
@@ -67,25 +67,25 @@ impl ops::Div<Float> for Vec3 {
 
 impl ops::AddAssign for Vec3 {
 	fn add_assign(&mut self, other: Self) {
-		*self = Vec3 { x: self.x + other.x, y: self.y + other.y, z: self.z + other.z, }
+		*self = Self { x: self.x + other.x, y: self.y + other.y, z: self.z + other.z, }
 	}
 }
 
 impl ops::SubAssign for Vec3 {
 	fn sub_assign(&mut self, other: Self) {
-		*self = Vec3 { x: self.x - other.x, y: self.y - other.y, z: self.z - other.z, }
+		*self = Self { x: self.x - other.x, y: self.y - other.y, z: self.z - other.z, }
 	}
 }
 
 impl ops::MulAssign<Float> for Vec3 {
 	fn mul_assign(&mut self, other: Float) {
-		*self = Vec3 { x: self.x * other, y: self.y * other, z: self.z * other, }
+		*self = Self { x: self.x * other, y: self.y * other, z: self.z * other, }
 	}
 }
 
 impl ops::DivAssign<Float> for Vec3 {
 	fn div_assign(&mut self, other: Float) {
-		*self = Vec3 { x: self.x / other, y: self.y / other, z: self.z / other, }
+		*self = Self { x: self.x / other, y: self.y / other, z: self.z / other, }
 	}
 }
 
@@ -93,47 +93,47 @@ impl ops::DivAssign<Float> for Vec3 {
 
 impl Vec3 {
 	/// A Vector with all components set to 0.
-	pub const ZERO: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
+	pub const ZERO: Self = Self::all(0.0);
 	
 	/// A Vector with all components set to 1.
-	pub const ONE: Vec3 = Vec3 { x: 1.0, y: 1.0, z: 1.0 };
+	pub const ONE: Self = Self::all(1.0);
 	
 	/// Make a new Vector, setting the x, y, and z components to their respective parameters.
-	pub fn new(x: Float, y: Float, z: Float) -> Self {
-		Vec3 { x, y, z }
+	pub const fn new(x: Float, y: Float, z: Float) -> Self {
+		Self { x, y, z }
 	}
 	
 	/// Make a new Vector, setting all components to `w`.
-	pub fn all(w: Float) -> Self {
-		Vec3 { x: w, y: w, z: w }
+	pub const fn all(w: Float) -> Self {
+		Self { x: w, y: w, z: w }
 	}
 	
 	/// Make a new vector with `x` as the x component and 0 for the others.
-	pub fn new_x(x: Float) -> Self {
-		Vec3 { x, y: 0.0, z: 0.0 }
+	pub const fn new_x(x: Float) -> Self {
+		Self { x, y: 0.0, z: 0.0 }
 	}
 	
 	/// Make a new vector with `y` as the y component and 0 for the others.
-	pub fn new_y(y: Float) -> Self {
-		Vec3 { x: 0.0, y, z: 0.0 }
+	pub const fn new_y(y: Float) -> Self {
+		Self { x: 0.0, y, z: 0.0 }
 	}
 	
 	/// Make a new vector with `z` as the z component and 0 for the others.
-	pub fn new_z(z: Float) -> Self {
-		Vec3 { x: 0.0, y: 0.0, z }
+	pub const fn new_z(z: Float) -> Self {
+		Self { x: 0.0, y: 0.0, z }
 	}
 	
 	/// Get the dot product of `self` dot `other`.
 	pub fn dot(self, other: Self) -> Float {
-		self.x * other.x + self.y * other.y + self.z * other.z
+		Float::mul_add(self.x, other.x, Float::mul_add(self.y, other.y, self.z * other.z))
 	}
 	
 	/// Get the cross product of `self` cross `other`.
 	pub fn cross(self, other: Self) -> Self {
-		Vec3 {
-			x: self.y * other.z - self.z * other.y,
-			y: self.z * other.x - self.x * other.z,
-			z: self.x * other.y - self.y * other.x,
+		Self {
+			x: Float::mul_add(self.y, other.z, -self.z * other.y),
+			y: Float::mul_add(self.z, other.x, -self.x * other.z),
+			z: Float::mul_add(self.x, other.y, -self.y * other.x),
 		}
 	}
 	

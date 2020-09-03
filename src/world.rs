@@ -10,7 +10,7 @@ pub struct Object {
 }
 impl Object {
 	pub fn new(solid: Box<dyn Hittable>, material: Box<dyn Material>) -> Self {
-		Object { solid, material }
+		Self { solid, material }
 	}
 }
 

@@ -8,8 +8,8 @@ pub struct Ray {
 	pub direction: Vec3,
 }
 impl Ray {
-	pub fn new(position: Point3, direction: Vec3) -> Self {
-		Ray { position, direction }
+	pub const fn new(position: Point3, direction: Vec3) -> Self {
+		Self { position, direction }
 	}
 	
 	pub fn at(&self, t: Float) -> Point3 {

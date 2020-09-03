@@ -9,8 +9,8 @@ pub struct Sphere {
 	pub radius: Float,
 }
 impl Sphere {
-	pub fn new(center: Point3, radius: Float) -> Self {
-		Sphere { center, radius }
+	pub const fn new(center: Point3, radius: Float) -> Self {
+		Self { center, radius }
 	}
 }
 impl Hittable for Sphere {
@@ -27,7 +27,7 @@ impl Hittable for Sphere {
 			
 			// TODO: this is still a bit ugly.
 			for sign in (-1..1).step_by(2) {
-				let t = (-half_b + (sign as Float) * disc_root) / a;
+				let t = disc_root.mul_add(sign as Float, -half_b);
 				
 				if t_range.contains(&t) {
 					let position = ray.at(t);

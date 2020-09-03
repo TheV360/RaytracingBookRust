@@ -15,12 +15,12 @@ mod world;
 mod camera;
 mod sphere;
 
-use vector::*;
-use ray::*;
-use material::*;
-use world::*;
-use camera::*;
-use sphere::*;
+use vector::{Vec3, Color, Float};
+use ray::Ray;
+use material::{Lambertian, Metal};
+use world::{World, Object};
+use camera::Camera;
+use sphere::Sphere;
 
 //////////////////
 
