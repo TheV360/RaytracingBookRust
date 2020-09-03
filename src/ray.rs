@@ -1,4 +1,4 @@
-use crate::vector::*;
+use crate::vector::{Vec3, Point3, Float};
 
 use std::ops::Range;
 

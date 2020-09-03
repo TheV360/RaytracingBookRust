@@ -1,5 +1,5 @@
-use crate::vector::*;
-use crate::ray::*;
+use crate::vector::{Vec3, Point3, Float};
+use crate::ray::Ray;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
 /// The `Camera` is an object that can shoot rays out at a scene.

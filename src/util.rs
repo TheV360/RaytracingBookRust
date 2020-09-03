@@ -1,4 +1,4 @@
-use crate::vector::*;
+use crate::vector::{Vec3, Float};
 
 use rand::prelude::*;
 
