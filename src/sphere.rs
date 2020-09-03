@@ -13,7 +13,7 @@ impl Sphere {
 		Sphere { center, radius }
 	}
 }
-impl RayHits for Sphere {
+impl Hittable for Sphere {
 	fn ray_hits(&self, t_range: Range<Float>, ray: Ray) -> Option<RayHitInfo> {
 		let ofs: Vec3 = ray.position - self.center;
 		

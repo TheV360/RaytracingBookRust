@@ -46,25 +46,38 @@ impl Neg for Vec3 {
 	}
 }
 impl Vec3 {
+	/// A Vector with all components set to 0.
 	pub const ZERO: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
 	
+	/// A Vector with all components set to 1.
+	pub const ONE: Vec3 = Vec3 { x: 1.0, y: 1.0, z: 1.0 };
+	
+	/// Make a new Vector, setting the x, y, and z components to their respective parameters.
 	pub fn new(x: Float, y: Float, z: Float) -> Self {
 		Vec3 { x, y, z }
 	}
 	
+	/// Make a new vector with `x` as the x component and 0 for the others.
 	pub fn new_x(x: Float) -> Self {
 		Vec3 { x, y: 0.0, z: 0.0 }
 	}
+	
+	/// Make a new vector with `y` as the y component and 0 for the others.
 	pub fn new_y(y: Float) -> Self {
 		Vec3 { x: 0.0, y, z: 0.0 }
 	}
+	
+	/// Make a new vector with `z` as the z component and 0 for the others.
 	pub fn new_z(z: Float) -> Self {
 		Vec3 { x: 0.0, y: 0.0, z }
 	}
 	
+	/// Get the dot product of `self` dot `other`.
 	pub fn dot(self, other: Self) -> Float {
 		self.x * other.x + self.y * other.y + self.z * other.z
 	}
+	
+	/// Get the cross product of `self` cross `other`.
 	pub fn cross(self, other: Self) -> Self {
 		Vec3 {
 			x: self.y * other.z - self.z * other.y,
@@ -94,7 +107,13 @@ impl Vec3 {
 		(other.dot(self) / other.magnitude()) * other
 	}
 	
+	/// Reflects the vector `self` from the normal vector `other`.
+	pub fn reflect(self, other: Self) -> Self {
+		self - 2.0 * self.dot(other) * other
+	}
+	
 	// TODO: make this generic???
+	/// Interpolates between the vectors `self` and `other` by a factor `t`.  Linearly. Uhh. good documentation.
 	pub fn lerp(self, other: Self, t: Float) -> Self {
 		self * t + other * (1.0 - t)
 	}

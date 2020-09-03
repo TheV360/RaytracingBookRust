@@ -33,6 +33,6 @@ impl RayHitInfo {
 	}
 }
 
-pub trait RayHits {
+pub trait Hittable {
 	fn ray_hits(&self, t_range: Range<Float>, ray: Ray) -> Option<RayHitInfo>;
 }

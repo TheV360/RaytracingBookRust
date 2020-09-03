@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::io::{self, Write};
 
 use image::{RgbImage, Rgb};
@@ -9,11 +9,17 @@ use rand::prelude::*;
 
 mod vector;
 mod ray;
+mod util;
+mod material;
+mod world;
 mod camera;
 mod sphere;
 
 use vector::*;
 use ray::*;
+use util::*;
+use material::*;
+use world::*;
 use camera::*;
 use sphere::*;
 
@@ -28,57 +34,17 @@ const MAX_DEPTH: usize = 64;
 
 const PROGRESS_BAR_CHARS: usize = 32;
 
-#[derive(Copy, Clone)]
-enum DiffuseMode {
-	FlawedLambertian,
-	IdealLambertian,
-	Hemisphere
-}
-
-fn random_in_unit_sphere() -> Vec3 {
-	loop {
-		let p = Vec3::new((random::<Float>() * 2.0) - 1.0, (random::<Float>() * 2.0) - 1.0, (random::<Float>() * 2.0) - 1.0);
-		if p.squared_magnitude() >= 1.0 { return p; }
-	}
-}
-
-fn random_unit_vector() -> Vec3 {
-	let a: Float = random::<Float>() * 2.0 * (std::f64::consts::PI as Float);
-	let z: Float = (random::<Float>() * 2.0) - 1.0;
-	let r = Float::sqrt(1.0 - z.powi(2));
-	Vec3::new(
-		r * Float::cos(a),
-		r * Float::sin(a),
-		z
-	)
-}
-
-fn random_in_hemisphere(normal: Vec3) -> Vec3 {
-	let o = random_in_unit_sphere();
-	if o.dot(normal) > 0.0 {
-		return o;
-	} else {
-		return -o;
-	}
-}
-
-fn ray_color(world: &Vec<Box<dyn RayHits>>, ray: Ray, depth: usize, diffuse_mode: DiffuseMode) -> Color {
+fn ray_color(world: &World, ray: Ray, depth: usize, diffuse_mode: DiffuseMode) -> Color {
 	if depth >= MAX_DEPTH {
 		return Color::ZERO;
 	}
 	
-	for object in world {
-		let t = object.ray_hits(0.001..Float::INFINITY, ray); //tODO: what does this want
-		if let Some(v) = t {
-			let target = v.position + match diffuse_mode {
-				DiffuseMode::FlawedLambertian => v.normal + random_in_unit_sphere(),
-				DiffuseMode::IdealLambertian => v.normal + random_unit_vector(),
-				DiffuseMode::Hemisphere => random_in_hemisphere(v.normal),
-			};
-			
-			return ray_color(&world, Ray::new(v.position, target - v.position), depth + 1, diffuse_mode) / 2.0;
-		}
+	// TODO: this should be a world struct.
+	if let Some(hit) = world.hit(ray, 0.001..Float::INFINITY) {
+		let target = diffuse_mode.get_diffuse_result(hit);
+		return ray_color(&world, Ray::new(hit.position, target - hit.position), depth + 1, diffuse_mode) / 2.0;
 	}
+	
 	let t = 0.5 * (ray.direction.y + 1.0);
 	Color::lerp(Color::new(0.5, 0.7, 1.0), Color::new(1.0, 1.0, 1.0), t)
 }
@@ -89,12 +55,12 @@ fn main() {
 	let mut image = RgbImage::new(WIDTH as u32, HEIGHT as u32);
 	let start_of_op = Instant::now();
 	
-	let world: Vec<Box<dyn RayHits>> = vec![
-		Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)),
-		Box::new(Sphere::new(Vec3::new(-1.0, -0.25, -1.0), 0.25)),
-		Box::new(Sphere::new(Vec3::new(-1.2, -0.375, -2.0), 0.125)),
-		Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0))
-	];
+	let world: World = World { objects: vec![
+		(Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)), Box::new(Lambertian { albedo: Color::ZERO })),
+		(Box::new(Sphere::new(Vec3::new(-1.0, -0.25, -1.0), 0.25)), Box::new(Lambertian { albedo: Color::ZERO })),
+		(Box::new(Sphere::new(Vec3::new(-1.2, -0.5, -2.0), 0.125)), Box::new(Lambertian { albedo: Color::ZERO })),
+		(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)), Box::new(Lambertian { albedo: Color::ZERO })),
+	] };
 	
 	let camera = Camera::new(Vec3::ZERO, ASPECT_RATIO, 2.0, 1.0);
 	
