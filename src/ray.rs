@@ -2,7 +2,7 @@ use crate::vector::*;
 
 use std::ops::Range;
 
-#[derive(Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
 pub struct Ray {
 	pub position: Point3,
 	pub direction: Vec3,
@@ -17,14 +17,14 @@ impl Ray {
 	}
 }
 
-#[derive(Copy, Clone)]
-pub struct RayHitInfo {
+#[derive(Copy, Clone, Debug)]
+pub struct HitInfo {
 	pub position: Point3,
 	pub normal: Vec3,
 	pub t: Float,
 	pub front_face: bool,
 }
-impl RayHitInfo {
+impl HitInfo {
 	pub fn get_face_normal_info(ray: Ray, outward_normal: Vec3) -> (bool, Vec3) {
 		let front_face = Vec3::dot(ray.direction, outward_normal) < 0.0;
 		let normal = if front_face { outward_normal } else { -outward_normal };
@@ -33,6 +33,8 @@ impl RayHitInfo {
 	}
 }
 
+/// The `Hittable` trait encompasses all things that can be hit by a ray. If some object implements
+/// the `Hittable` trait, then it can easily be drawn in the world with an associated Material.
 pub trait Hittable {
-	fn ray_hits(&self, t_range: Range<Float>, ray: Ray) -> Option<RayHitInfo>;
+	fn ray_hits(&self, t_range: Range<Float>, ray: Ray) -> Option<HitInfo>;
 }

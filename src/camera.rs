@@ -1,7 +1,8 @@
 use crate::vector::*;
 use crate::ray::*;
 
-#[derive(Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
+/// The `Camera` is an object that can shoot rays out at a scene.
 pub struct Camera {
 	pub origin: Point3,
 	pub lower_left_corner: Point3,
@@ -9,6 +10,7 @@ pub struct Camera {
 	pub vertical: Vec3,
 }
 impl Camera {
+	/// Sets up the camera. Pretty self-explanatory.
 	pub fn new(origin: Vec3, aspect_ratio: Float, viewport_height: Float, focal_length: Float) -> Self {
 		let viewport_width = aspect_ratio * viewport_height;
 		
@@ -19,7 +21,16 @@ impl Camera {
 		Camera { origin, lower_left_corner, horizontal, vertical, }
 	}
 	
+	/// Gets a normalized ray from the Camera's view.
 	pub fn get_ray(&self, u: Float, v: Float) -> Ray {
-		Ray::new(self.origin, (self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin).normalize())
+		Ray::new(
+			self.origin, 
+			(
+				self.lower_left_corner +
+				u * self.horizontal +
+				v * self.vertical
+				- self.origin
+			).normalize()
+		)
 	}
 }

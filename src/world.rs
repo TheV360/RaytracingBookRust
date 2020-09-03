@@ -18,11 +18,11 @@ pub struct World {
 	pub objects: Vec<Object>,
 }
 impl World {
-	pub fn hit(&self, ray: Ray, t_range: Range<Float>) -> Option<(&Object, RayHitInfo)> {
-		let mut tmp_hit: Option<(&Object, RayHitInfo)> = None;
+	pub fn hit(&self, ray: Ray, t_range: Range<Float>) -> Option<(&Object, HitInfo)> {
+		let mut tmp_hit: Option<(&Object, HitInfo)> = None;
 		let mut closest = t_range.end;
 		
-		for object in self.objects.iter() {
+		for object in &self.objects {
 			if let Some(hit) = object.solid.ray_hits(t_range.start..closest, ray) {
 				closest = hit.t;
 				tmp_hit = Some((object, hit));

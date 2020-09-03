@@ -1,57 +1,96 @@
-use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::ops;
 use std::fmt;
 
+/// The `Float` type lets you easily switch between single-precision and double-precision float types.
+/// 
+/// If someone implements a higher-precision type, they could easily replace this type declaration with
+/// their own type.
 pub type Float = f64;
 
-#[derive(Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Default)]
+/// A Vector with 3 components: x, y, and z.
 pub struct Vec3 {
 	pub x: Float,
 	pub y: Float,
 	pub z: Float,
 }
-impl Add for Vec3 {
+
+// Operators
+
+impl ops::Neg for Vec3 {
+	type Output = Self;
+	fn neg(self) -> Self::Output {
+		Vec3 { x: -self.x, y: -self.y, z: -self.z }
+	}
+}
+
+impl ops::Add for Vec3 {
 	type Output = Self;
 	fn add(self, other: Self) -> Self::Output {
 		Vec3 { x: self.x + other.x, y: self.y + other.y, z: self.z + other.z, }
 	}
 }
-impl Sub for Vec3 {
+
+impl ops::Sub for Vec3 {
 	type Output = Self;
 	fn sub(self, other: Self) -> Self::Output {
 		Vec3 { x: self.x - other.x, y: self.y - other.y, z: self.z - other.z, }
 	}
 }
-impl Mul<Vec3> for Vec3 {
+
+impl ops::Mul<Float> for Vec3 {
+	type Output = Self;
+	fn mul(self, other: Float) -> Self::Output {
+		Vec3 { x: self.x * other, y: self.y * other, z: self.z * other, }
+	}
+}
+impl ops::Mul<Vec3> for Float {
+	type Output = Vec3;
+	fn mul(self, other: Vec3) -> Self::Output { other * self }
+}
+impl ops::Mul<Vec3> for Vec3 {
 	type Output = Self;
 	/// This will cause a bit of confusion. This is a naive "multiply each component with its counterpart" thing.
 	fn mul(self, other: Vec3) -> Self::Output {
 		Vec3 { x: self.x * other.x, y: self.y * other.y, z: self.z * other.z, }
 	}
 }
-impl Mul<Float> for Vec3 {
-	type Output = Self;
-	fn mul(self, other: Float) -> Self::Output {
-		Vec3 { x: self.x * other, y: self.y * other, z: self.z * other, }
-	}
-}
-impl Mul<Vec3> for Float {
-	type Output = Vec3;
-	fn mul(self, other: Vec3) -> Self::Output {
-		Vec3 { x: self * other.x, y: self * other.y, z: self * other.z, }
-	}
-}
-impl Div<Float> for Vec3 {
+
+impl ops::Div<Float> for Vec3 {
 	type Output = Self;
 	fn div(self, other: Float) -> Self::Output {
 		Vec3 { x: self.x / other, y: self.y / other, z: self.z / other, }
 	}
 }
-impl Neg for Vec3 {
-	type Output = Self;
-	fn neg(self) -> Self::Output {
-		Vec3 { x: -self.x, y: -self.y, z: -self.z }
+
+// Assign Operators
+
+impl ops::AddAssign for Vec3 {
+	fn add_assign(&mut self, other: Self) {
+		*self = Vec3 { x: self.x + other.x, y: self.y + other.y, z: self.z + other.z, }
 	}
 }
+
+impl ops::SubAssign for Vec3 {
+	fn sub_assign(&mut self, other: Self) {
+		*self = Vec3 { x: self.x - other.x, y: self.y - other.y, z: self.z - other.z, }
+	}
+}
+
+impl ops::MulAssign<Float> for Vec3 {
+	fn mul_assign(&mut self, other: Float) {
+		*self = Vec3 { x: self.x * other, y: self.y * other, z: self.z * other, }
+	}
+}
+
+impl ops::DivAssign<Float> for Vec3 {
+	fn div_assign(&mut self, other: Float) {
+		*self = Vec3 { x: self.x / other, y: self.y / other, z: self.z / other, }
+	}
+}
+
+// Main impl
+
 impl Vec3 {
 	/// A Vector with all components set to 0.
 	pub const ZERO: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
@@ -131,26 +170,25 @@ impl Vec3 {
 	}
 }
 
-impl Default for Vec3 {
-	fn default() -> Self {
-		Vec3::ZERO
-	}
-}
+// Additional Utility Traits
+
 impl fmt::Display for Vec3 {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "({}, {}, {})", self.x, self.y, self.z)
 	}
 }
 
-impl From<Vec3> for [u8; 3] {
-	fn from(v: Vec3) -> Self {
+impl From<Color> for [u8; 3] {
+	fn from(c: Color) -> Self {
 		[
-			(255.999 * v.x).floor() as u8,
-			(255.999 * v.y).floor() as u8,
-			(255.999 * v.z).floor() as u8
+			(255.999 * c.x).floor() as u8,
+			(255.999 * c.y).floor() as u8,
+			(255.999 * c.z).floor() as u8
 		]
 	}
 }
+
+// Alternate Names
 
 pub type Color = Vec3;
 pub type Point3 = Vec3;
