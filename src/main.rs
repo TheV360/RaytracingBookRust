@@ -17,7 +17,6 @@ mod sphere;
 
 use vector::*;
 use ray::*;
-use util::*;
 use material::*;
 use world::*;
 use camera::*;
@@ -29,20 +28,22 @@ const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
 const ASPECT_RATIO: Float = (WIDTH as Float) / (HEIGHT as Float);
 
-const SAMPLES_PER_PIXEL: usize = 64;
-const MAX_DEPTH: usize = 64;
+const SAMPLES_PER_PIXEL: usize = 128;
+const MAX_DEPTH: usize = 128;
 
 const PROGRESS_BAR_CHARS: usize = 32;
 
-fn ray_color(world: &World, ray: Ray, depth: usize, diffuse_mode: DiffuseMode) -> Color {
+fn ray_color(world: &World, ray: Ray, depth: usize) -> Color {
 	if depth >= MAX_DEPTH {
 		return Color::ZERO;
 	}
 	
-	// TODO: this should be a world struct.
-	if let Some(hit) = world.hit(ray, 0.001..Float::INFINITY) {
-		let target = diffuse_mode.get_diffuse_result(hit);
-		return ray_color(&world, Ray::new(hit.position, target - hit.position), depth + 1, diffuse_mode) / 2.0;
+	if let Some((obj, hit)) = world.hit(ray, 0.001..Float::INFINITY) {
+		if let Some((attenuation, scattered)) = obj.material.scatter(ray, hit) {
+			return attenuation * ray_color(world, scattered, depth + 1);
+		} else {
+			return Color::ZERO;
+		}
 	}
 	
 	let t = 0.5 * (ray.direction.y + 1.0);
@@ -56,10 +57,10 @@ fn main() {
 	let start_of_op = Instant::now();
 	
 	let world: World = World { objects: vec![
-		(Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)), Box::new(Lambertian { albedo: Color::ZERO })),
-		(Box::new(Sphere::new(Vec3::new(-1.0, -0.25, -1.0), 0.25)), Box::new(Lambertian { albedo: Color::ZERO })),
-		(Box::new(Sphere::new(Vec3::new(-1.2, -0.5, -2.0), 0.125)), Box::new(Lambertian { albedo: Color::ZERO })),
-		(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)), Box::new(Lambertian { albedo: Color::ZERO })),
+		Object::new(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)), Box::new(Lambertian { albedo: Color::new(0.8, 0.8, 0.0) })),
+		Object::new(Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)), Box::new(Lambertian { albedo: Color::new(0.7, 0.3, 0.3) })),
+		Object::new(Box::new(Sphere::new(Vec3::new(-1.0, -0.25, -1.5), 0.5)), Box::new(Metal { albedo: Color::all(0.8), fuzz: 0.3 })),
+		Object::new(Box::new(Sphere::new(Vec3::new(0.8, 0.5, -1.0), 0.5)), Box::new(Metal { albedo: Color::new(0.8, 0.6, 0.2), fuzz: 1.0 })),
 	] };
 	
 	let camera = Camera::new(Vec3::ZERO, ASPECT_RATIO, 2.0, 1.0);
@@ -78,7 +79,7 @@ fn main() {
 				let v = 1.0 - ((y as Float + rng.gen::<Float>()) / HEIGHT as Float);
 				
 				let r = camera.get_ray(u, v);
-				pixel_color = pixel_color + ray_color(&world, r, 0, DiffuseMode::Hemisphere);
+				pixel_color = pixel_color + ray_color(&world, r, 0);
 			}
 			
 			// And then write the color.

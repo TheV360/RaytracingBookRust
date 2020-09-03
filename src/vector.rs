@@ -21,6 +21,13 @@ impl Sub for Vec3 {
 		Vec3 { x: self.x - other.x, y: self.y - other.y, z: self.z - other.z, }
 	}
 }
+impl Mul<Vec3> for Vec3 {
+	type Output = Self;
+	/// This will cause a bit of confusion. This is a naive "multiply each component with its counterpart" thing.
+	fn mul(self, other: Vec3) -> Self::Output {
+		Vec3 { x: self.x * other.x, y: self.y * other.y, z: self.z * other.z, }
+	}
+}
 impl Mul<Float> for Vec3 {
 	type Output = Self;
 	fn mul(self, other: Float) -> Self::Output {
@@ -55,6 +62,11 @@ impl Vec3 {
 	/// Make a new Vector, setting the x, y, and z components to their respective parameters.
 	pub fn new(x: Float, y: Float, z: Float) -> Self {
 		Vec3 { x, y, z }
+	}
+	
+	/// Make a new Vector, setting all components to `w`.
+	pub fn all(w: Float) -> Self {
+		Vec3 { x: w, y: w, z: w }
 	}
 	
 	/// Make a new vector with `x` as the x component and 0 for the others.
