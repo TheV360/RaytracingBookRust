@@ -17,7 +17,7 @@ mod sphere;
 
 use vector::{Vec3, Color, Float};
 use ray::Ray;
-use material::{Lambertian, Metal};
+use material::{Lambertian, Metal, Dielectric};
 use world::{World, Object};
 use camera::Camera;
 use sphere::Sphere;
@@ -74,11 +74,15 @@ fn main() {
 		),
 		Object::new(
 			Box::new(Sphere::new(Vec3::new(-1.0, -0.25, -1.5), 0.5)),
-			Box::new(Metal { albedo: Color::all(0.8), fuzz: 0.3 })
+			Box::new(Metal { albedo: Color::all(0.8), fuzz: 0.0 })
 		),
 		Object::new(
-			Box::new(Sphere::new(Vec3::new(0.8, 0.5, -1.0), 0.5)),
+			Box::new(Sphere::new(Vec3::new(0.8, 0.5, -1.0), 0.25)),
 			Box::new(Metal { albedo: Color::new(0.8, 0.6, 0.2), fuzz: 1.0 })
+		),
+		Object::new(
+			Box::new(Sphere::new(Vec3::new(-1.25, -0.25, -0.75), 0.25)),
+			Box::new(Dielectric { refractive_index: 1.5 })
 		),
 	] };
 	

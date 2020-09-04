@@ -126,7 +126,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gfx_tinyraytracer"
+name = "gfx_raytracer_in_one_weekend"
 version = "0.1.0"
 dependencies = [
  "image",

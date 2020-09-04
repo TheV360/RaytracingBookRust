@@ -2,6 +2,9 @@ use crate::vector::{Vec3, Float};
 
 use rand::prelude::*;
 
+// I don't want to reimport rand everywhere.
+pub fn random_float() -> Float { random() }
+
 pub fn random_in_unit_sphere() -> Vec3 {
 	loop {
 		let p = Vec3::new(
@@ -24,11 +27,14 @@ pub fn random_unit_vector() -> Vec3 {
 	)
 }
 
-/*pub fn random_in_hemisphere(normal: Vec3) -> Vec3 {
-	let o = random_in_unit_sphere();
-	if o.dot(normal) > 0.0 {
-		return o;
-	} else {
-		return -o;
-	}
-}*/
+pub fn refract(unit_vector: Vec3, normal: Vec3, etai_over_etat: Float) -> Vec3 {
+	let cos_theta = Vec3::dot(-unit_vector, normal);
+	let r_out_perpendicular = etai_over_etat * (unit_vector + cos_theta * normal);
+	let r_out_parallel = -Float::sqrt(Float::abs(1.0 - r_out_perpendicular.squared_magnitude())) * normal;
+	r_out_perpendicular + r_out_parallel
+}
+
+pub fn schlick(cosine: Float, refractive_index: Float) -> Float {
+	let r0 = ((1.0 - refractive_index) / (1.0 + refractive_index)).powi(2);
+	Float::mul_add(1.0 - r0, (1.0 - cosine).powi(5), r0)
+}
