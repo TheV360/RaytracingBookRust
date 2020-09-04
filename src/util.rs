@@ -27,6 +27,17 @@ pub fn random_unit_vector() -> Vec3 {
 	)
 }
 
+pub fn random_in_unit_disk() -> Vec3 {
+	loop {
+		let p = Vec3::new(
+			(random::<Float>() * 2.0) - 1.0,
+			(random::<Float>() * 2.0) - 1.0,
+			0.0
+		);
+		if p.squared_magnitude() < 1.0 { return p; }
+	}
+}
+
 pub fn refract(unit_vector: Vec3, normal: Vec3, etai_over_etat: Float) -> Vec3 {
 	let cos_theta = Vec3::dot(-unit_vector, normal);
 	let r_out_perpendicular = etai_over_etat * (unit_vector + cos_theta * normal);

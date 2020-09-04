@@ -15,11 +15,11 @@ mod world;
 mod camera;
 mod sphere;
 
-use vector::{Vec3, Color, Float};
+use vector::{Vec3, Point3, Color, Float};
 use ray::Ray;
 use material::{Lambertian, Metal, Dielectric};
 use world::{World, Object};
-use camera::Camera;
+use camera::{Camera, CameraLens};
 use sphere::Sphere;
 
 //////////////////
@@ -63,30 +63,39 @@ fn main() {
 	
 	let mut image = RgbImage::new(WIDTH as u32, HEIGHT as u32);
 	
+	let mat_ground = Lambertian { albedo: Color::new(0.7, 0.8, 0.1) };
+	let mat_center = Lambertian { albedo: Color::new(0.1, 0.2, 0.5) };
+	let mat_left = Dielectric { refractive_index: 1.5 };
+	let mat_right = Metal { albedo: Color::new(0.8, 0.6, 0.2), fuzz: 0.0 };
+	
 	let world = World { objects: vec![
 		Object::new(
-			Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)), 
-			Box::new(Lambertian { albedo: Color::new(0.8, 0.8, 0.0) })
+			Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)),
+			Box::new(mat_ground)
 		),
 		Object::new(
 			Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)),
-			Box::new(Lambertian { albedo: Color::new(0.7, 0.3, 0.3) })
+			Box::new(mat_center)
 		),
 		Object::new(
-			Box::new(Sphere::new(Vec3::new(-1.0, -0.25, -1.5), 0.5)),
-			Box::new(Metal { albedo: Color::all(0.8), fuzz: 0.0 })
+			Box::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5)),
+			Box::new(mat_left)
 		),
 		Object::new(
-			Box::new(Sphere::new(Vec3::new(0.8, 0.5, -1.0), 0.25)),
-			Box::new(Metal { albedo: Color::new(0.8, 0.6, 0.2), fuzz: 1.0 })
+			Box::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), -0.45)),
+			Box::new(mat_left)
 		),
 		Object::new(
-			Box::new(Sphere::new(Vec3::new(-1.25, -0.25, -0.75), 0.25)),
-			Box::new(Dielectric { refractive_index: 1.5 })
+			Box::new(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5)),
+			Box::new(mat_right)
 		),
 	] };
-	
-	let camera = Camera::new(Vec3::ZERO, ASPECT_RATIO, 2.0, 1.0);
+		
+	let origin = Point3::new(-1.5, 2.0, 1.0);
+	let look_at = Point3::new_z(-1.0);
+	let lens = CameraLens::new_from_dist(2.0, origin, look_at);
+	let camera = Camera::new(origin, look_at, Vec3::new_y(1.0), 20.0, ASPECT_RATIO, Some(lens));
+	// let camera = Camera::new(origin, look_at, Vec3::new_y(1.0), 20.0, ASPECT_RATIO, None);
 	
 	let start_of_op = Instant::now();
 	for y in (0..HEIGHT).rev() {
