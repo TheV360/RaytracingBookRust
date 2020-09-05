@@ -5,11 +5,11 @@ use crate::material::Material;
 use std::ops::Range;
 
 pub struct Object {
-	pub solid: Box<dyn Hittable>,
-	pub material: Box<dyn Material>,
+	pub solid: Box<dyn Hittable + Send + Sync>,
+	pub material: Box<dyn Material + Send + Sync>,
 }
 impl Object {
-	pub fn new(solid: Box<dyn Hittable>, material: Box<dyn Material>) -> Self {
+	pub fn new(solid: Box<dyn Hittable + Send + Sync>, material: Box<dyn Material + Send + Sync>) -> Self {
 		Self { solid, material }
 	}
 }

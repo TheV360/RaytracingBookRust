@@ -1,9 +1,13 @@
-use crate::vector::{Vec3, Float};
+use crate::vector::{Vec3, Color, Float};
 
 use rand::prelude::*;
 
 // I don't want to reimport rand everywhere.
 pub fn random_float() -> Float { random() }
+
+pub fn random_color() -> Color {
+	Color::new(random_float(), random_float(), random_float())
+}
 
 pub fn random_in_unit_sphere() -> Vec3 {
 	loop {

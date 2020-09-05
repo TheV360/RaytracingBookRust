@@ -129,6 +129,7 @@ dependencies = [
 name = "gfx_raytracer_in_one_weekend"
 version = "0.1.0"
 dependencies = [
+ "crossbeam-utils",
  "image",
  "rand",
 ]

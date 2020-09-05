@@ -1,9 +1,10 @@
-use std::time::Instant;
 use std::io::{self, Write};
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
+
+use crossbeam_utils::thread;
 
 use image::{RgbImage, Rgb};
-
-use rand::prelude::*;
 
 //////////////////
 
@@ -14,42 +15,89 @@ mod material;
 mod world;
 mod camera;
 mod sphere;
+mod raytracer;
 
 use vector::{Vec3, Point3, Color, Float};
-use ray::Ray;
 use material::{Lambertian, Metal, Dielectric};
 use world::{World, Object};
 use camera::{Camera, CameraLens};
 use sphere::Sphere;
+use raytracer::{Raytracer, Screen};
 
 //////////////////
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
-const ASPECT_RATIO: Float = (WIDTH as Float) / (HEIGHT as Float);
 
-const SAMPLES_PER_PIXEL: usize = 128;
-const MAX_DEPTH: usize = 128;
+const SAMPLES_PER_PIXEL: usize = 64;
+const MAX_DEPTH: usize = 64;
+
+const RENDER_THREADS: usize = 8;
 
 const PROGRESS_BAR_CHARS: usize = 32;
 
-fn ray_color(world: &World, ray: Ray, depth: usize) -> Color {
-	// If we've recursed too deep, stop.
-	if depth >= MAX_DEPTH {
-		return Color::ZERO;
-	}
+fn main() {
+	let image: Arc<Mutex<RgbImage>> = Arc::new(Mutex::new(RgbImage::new(WIDTH as u32, HEIGHT as u32)));
 	
-	if let Some((obj, hit)) = world.hit(ray, 0.001..Float::INFINITY) {
-		if let Some((attenuation, scattered)) = obj.material.scatter(ray, hit) {
-			return attenuation * ray_color(world, scattered, depth + 1);
-		} else {
-			return Color::ZERO;
+	let raytracer = Raytracer { screen: Screen { width: WIDTH, height: HEIGHT }, max_depth: MAX_DEPTH, samples: SAMPLES_PER_PIXEL };
+	
+	// let world = random_scene();
+	let mut world = World { objects: vec![
+		Object::new(Box::new(Sphere::new(Vec3::new(0.0, -1000.5, -1.0), 1000.0)), Box::new(Lambertian { albedo: Color::all(0.5) })),
+		Object::new(Box::new(Sphere::new(Vec3::ZERO, 0.5)), Box::new(Metal { albedo: Color::new(1.0, 0.25, 0.5), fuzz: 0.0 })),
+		Object::new(Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)), Box::new(Metal { albedo: Color::new(0.25, 1.0, 0.5), fuzz: 0.125 })),
+		Object::new(Box::new(Sphere::new(Vec3::new_z(1.0), 0.5)), Box::new(Metal { albedo: Color::new(0.5, 0.25, 1.0), fuzz: 0.25 })),
+	]};
+	for i in -8..=8 {
+		for j in -8..=8 {
+			world.objects.push(Object::new(
+				Box::new(Sphere::new(Vec3::new(i as Float, 0.5 + (i as Float).sin() * (j as Float).cos(), j as Float) / 2.0, 0.2)),
+				if util::random_float() < 0.8 {
+					Box::new(Lambertian { albedo: (Vec3::ONE + util::random_color()) / 2.0 })
+				} else {
+					Box::new(Dielectric { refractive_index: 1.5 })
+				}
+			));
 		}
 	}
 	
-	// Sky color.
-	let t = 0.5 * (ray.direction.y + 1.0);
-	Color::lerp(Color::new(0.5, 0.7, 1.0), Color::ONE, t)
+	let origin = Point3::new(13.0, 4.0, 3.0);
+	let look_at = Point3::ZERO;
+	let lens = CameraLens::new_from_dist(0.1, origin, look_at);
+	let camera = Camera::new(origin, look_at, Vec3::new_y(1.0), 10.0, raytracer.screen.get_aspect_ratio(), Some(lens));
+	
+	let start_of_op = Instant::now();
+	
+	thread::scope(|s| {
+		let world_ref = &world;
+		
+		for thread_no in 0..RENDER_THREADS {
+			let image_ref = image.clone();
+			
+			s.spawn(move |_| {
+				for y in (0..HEIGHT).rev() {
+					for x in (0..WIDTH).skip(thread_no).step_by(RENDER_THREADS) {
+						let pixel = raytracer.get_pixel(
+							world_ref, &camera,
+							x as Float / raytracer.screen.width as Float,
+							1.0 - (y as Float / raytracer.screen.height as Float)
+						);
+						
+						image_ref.lock().expect("well I failed.").put_pixel(x as u32, y as u32, Rgb(pixel.into()));
+					}
+				}
+			});
+		}
+	}).expect("AAAAA GOD DANG TI");
+	let duration = start_of_op.elapsed();
+	
+	// Note: the fancy \x1B[?C characters move the cursor forward ? characters.
+	// This sadly doesn't work on Windows Terminal, but that's because it sucks.
+	
+	eprint!("\r\x1B[{}C Saving...", PROGRESS_BAR_CHARS);
+	image.lock().expect("uhuhhh what").save("output.png").unwrap();
+	
+	eprintln!("\r\x1B[{}C Done. Took {:.2?}.", PROGRESS_BAR_CHARS, duration);
 }
 
 fn print_console_progress_bar(percent_done: Float) {
@@ -58,75 +106,54 @@ fn print_console_progress_bar(percent_done: Float) {
 	io::stderr().flush().expect("Could not flush stderr! That's weird.");
 }
 
-fn main() {
-	let mut rng = thread_rng();
+fn random_scene() -> World {
+	let mut world = World { objects: Vec::new() };
 	
-	let mut image = RgbImage::new(WIDTH as u32, HEIGHT as u32);
+	world.objects.push(Object::new(
+		Box::new(Sphere::new(Vec3::new(0.0, -1000.5, -1.0), 1000.0)),
+		Box::new(Lambertian { albedo: Color::all(0.5) })
+	));
 	
-	let mat_ground = Lambertian { albedo: Color::new(0.7, 0.8, 0.1) };
-	let mat_center = Lambertian { albedo: Color::new(0.1, 0.2, 0.5) };
-	let mat_left = Dielectric { refractive_index: 1.5 };
-	let mat_right = Metal { albedo: Color::new(0.8, 0.6, 0.2), fuzz: 0.0 };
-	
-	let world = World { objects: vec![
-		Object::new(
-			Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)),
-			Box::new(mat_ground)
-		),
-		Object::new(
-			Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)),
-			Box::new(mat_center)
-		),
-		Object::new(
-			Box::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5)),
-			Box::new(mat_left)
-		),
-		Object::new(
-			Box::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), -0.45)),
-			Box::new(mat_left)
-		),
-		Object::new(
-			Box::new(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5)),
-			Box::new(mat_right)
-		),
-	] };
-		
-	let origin = Point3::new(-1.5, 2.0, 1.0);
-	let look_at = Point3::new_z(-1.0);
-	let lens = CameraLens::new_from_dist(2.0, origin, look_at);
-	let camera = Camera::new(origin, look_at, Vec3::new_y(1.0), 20.0, ASPECT_RATIO, Some(lens));
-	// let camera = Camera::new(origin, look_at, Vec3::new_y(1.0), 20.0, ASPECT_RATIO, None);
-	
-	let start_of_op = Instant::now();
-	for y in (0..HEIGHT).rev() {
-		print_console_progress_bar(1.0 - ((y as Float) / (HEIGHT as Float)));
-		
-		for x in 0..WIDTH {
-			let mut pixel_color = Color::ZERO;
+	for a in -11..11 {
+		for b in -11..11 {
+			let choose_mat = util::random_float();
+			let center = Point3::new(
+				Float::mul_add(util::random_float(), 0.9, a as Float),
+				0.2,
+				Float::mul_add(util::random_float(), 0.9, b as Float)
+			);
+			let shape = Sphere::new(center, 0.2);
 			
-			for _ in 0..SAMPLES_PER_PIXEL {
-				// Get uv screen coordinates for the camera.
-				let u = (x as Float + rng.gen::<Float>()) / WIDTH as Float;
-				let v = 1.0 - ((y as Float + rng.gen::<Float>()) / HEIGHT as Float);
+			if choose_mat < 0.8 {
+				let albedo = util::random_color() * util::random_color();
 				
-				// Shoot ray out of the camera.
-				let r = camera.get_ray(u, v);
-				pixel_color += ray_color(&world, r, 0);
+				let material = Lambertian { albedo };
+				world.objects.push(Object::new(Box::new(shape), Box::new(material)));
+			} else if choose_mat < 0.95 {
+				let albedo = (util::random_color() + Color::ONE) / 2.0;
+				let fuzz = (util::random_float() + 1.0) / 2.0;
+				
+				let material = Metal { albedo, fuzz };
+				world.objects.push(Object::new(Box::new(shape), Box::new(material)));
+			} else {
+				let material = Dielectric { refractive_index: 1.5 };
+				world.objects.push(Object::new(Box::new(shape), Box::new(material)));
 			}
-			
-			// And then write the color.
-			let tmp = pixel_color / SAMPLES_PER_PIXEL as Float;
-			let gamma_correct_color = Vec3::new(tmp.x.sqrt(), tmp.y.sqrt(), tmp.z.sqrt());
-			image.put_pixel(x as u32, y as u32, Rgb(gamma_correct_color.into()));
 		}
 	}
-	let duration = start_of_op.elapsed();
 	
-	// Note: the fancy \x1B[?C characters move the cursor forward ? characters.
-	// This sadly doesn't work on Windows Terminal, but that's because it sucks.
+	world.objects.push(Object::new(
+		Box::new(Sphere::new(Point3::new_y(1.0), 1.0)),
+		Box::new(Dielectric { refractive_index: 1.5 })
+	));
+	world.objects.push(Object::new(
+		Box::new(Sphere::new(Point3::new(-4.0, 1.0, 0.0), 1.0)),
+		Box::new(Lambertian { albedo: Color::new(0.4, 0.2, 0.1) })
+	));
+	world.objects.push(Object::new(
+		Box::new(Sphere::new(Point3::new(4.0, 1.0, 0.0), 1.0)),
+		Box::new(Metal { albedo: Color::new(0.7, 0.6, 0.5), fuzz: 0.0 })
+	));
 	
-	eprint!("\r\x1B[{}C Saving...", PROGRESS_BAR_CHARS);
-	image.save("output.png").unwrap();
-	
-	eprintln!("\r\x1B[{}C Done. Took {:.2?}.", PROGRESS_BAR_CHARS, duration);
+	world
 }
