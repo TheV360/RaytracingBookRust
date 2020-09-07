@@ -14,7 +14,6 @@ impl CameraLens {
 	
 	pub fn new_from_dist(aperture: Float, origin: Point3, look_at: Point3) -> Self {
 		let focus_dist = Vec3::magnitude(origin - look_at);
-		
 		Self { aperture, focus_dist }
 	}
 }

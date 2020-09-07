@@ -27,8 +27,7 @@ impl Raytracer {
 		}
 		
 		// Finally, average all the samples and calculate the gamma-correct color.
-		let avg_sample = sample_results / self.samples as Float;
-		Color::new(avg_sample.x.sqrt(), avg_sample.y.sqrt(), avg_sample.z.sqrt())
+		sample_results.gamma_accurate_average(self.samples)
 	}
 	
 	pub fn ray_color(&self, world: &World, ray: Ray, depth: usize) -> Color {
@@ -47,7 +46,7 @@ impl Raytracer {
 		
 		// Sky color.
 		let t = 0.5 * (ray.direction.y + 1.0);
-		Color::lerp(Color::new(0.5, 0.7, 1.0), Color::ONE, t)
+		Color::lerp(world.sky_color.0, world.sky_color.1, t)
 	}
 }
 
@@ -56,7 +55,7 @@ pub struct Screen {
 	pub width: usize, pub height: usize,
 }
 impl Screen {
-	pub  fn get_aspect_ratio(&self) -> Float {
+	pub fn get_aspect_ratio(&self) -> Float {
 		self.width as Float / self.height as Float
 	}
 }

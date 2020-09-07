@@ -191,4 +191,11 @@ impl From<Color> for [u8; 3] {
 // Alternate Names
 
 pub type Color = Vec3;
+impl Color {
+	pub fn gamma_accurate_average(self, samples: usize) -> Self {
+		let incorrect_avg = self / (samples as Float);
+		Self { x: incorrect_avg.x.sqrt(), y: incorrect_avg.y.sqrt(), z: incorrect_avg.z.sqrt() }
+	}
+}
+
 pub type Point3 = Vec3;

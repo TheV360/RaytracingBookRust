@@ -1,4 +1,4 @@
-use crate::vector::Float;
+use crate::vector::{Point3, Color, Float};
 use crate::ray::{Ray, HitInfo, Hittable};
 use crate::material::Material;
 
@@ -16,6 +16,7 @@ impl Object {
 
 pub struct World {
 	pub objects: Vec<Object>,
+	pub sky_color: (Color, Color),
 }
 impl World {
 	pub fn hit(&self, ray: Ray, t_range: Range<Float>) -> Option<(&Object, HitInfo)> {
@@ -30,5 +31,13 @@ impl World {
 		}
 		
 		tmp_hit
+	}
+}
+impl Default for World {
+	fn default() -> Self {
+		World {
+			sky_color: (Color::new(0.5, 0.7, 1.0), Color::ONE),
+			objects: Vec::new(),
+		}
 	}
 }
