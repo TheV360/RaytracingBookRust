@@ -1,4 +1,4 @@
-use crate::vector::{Point3, Color, Float};
+use crate::vector::{Color, Float};
 use crate::ray::{Ray, HitInfo, Hittable};
 use crate::material::Material;
 

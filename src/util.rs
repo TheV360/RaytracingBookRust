@@ -32,14 +32,13 @@ pub fn random_unit_vector() -> Vec3 {
 }
 
 pub fn random_in_unit_disk() -> Vec3 {
-	loop {
-		let p = Vec3::new(
-			(random::<Float>() * 2.0) - 1.0,
-			(random::<Float>() * 2.0) - 1.0,
-			0.0
-		);
-		if p.squared_magnitude() < 1.0 { return p; }
-	}
+	let a = random::<Float>() * 2.0 * (std::f64::consts::PI as Float);
+	let r = random::<Float>() + random::<Float>();
+	Vec3::new(
+		r * Float::cos(a),
+		r * Float::sin(a),
+		0.0
+	)
 }
 
 pub fn refract(unit_vector: Vec3, normal: Vec3, etai_over_etat: Float) -> Vec3 {

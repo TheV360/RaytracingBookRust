@@ -41,12 +41,11 @@ pub struct Dielectric {
 }
 impl Material for Dielectric {
 	fn scatter(&self, ray: Ray, hit: HitInfo) -> Option<(Color, Ray)> {
-		let etai_over_etat;
-		if hit.front_face { 
-			etai_over_etat = self.refractive_index.recip();
+		let etai_over_etat = if hit.front_face { 
+			self.refractive_index.recip()
 		} else {
-			etai_over_etat = self.refractive_index;
-		}
+			self.refractive_index
+		};
 		
 		let unit_direction = ray.direction.normalize();
 		

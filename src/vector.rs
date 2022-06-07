@@ -164,9 +164,10 @@ impl Vec3 {
 	}
 	
 	// TODO: make this generic???
-	/// Interpolates between the vectors `self` and `other` by a factor `t`.  Linearly. Uhh. good documentation.
+	/// Interpolates between the vectors `self` and `other` by a factor `t`.
+	/// Linearly. Uhh. good documentation.
 	pub fn lerp(self, other: Self, t: Float) -> Self {
-		self * t + other * (1.0 - t)
+		self * (1.0 - t) + other * t
 	}
 }
 

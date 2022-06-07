@@ -1,9 +1,8 @@
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Instant, Duration};
-use std::thread::sleep;
+use std::sync::Arc;
+use std::time::Instant;
+use std::thread;
 
-use crossbeam_utils::thread;
+use std::sync::mpsc::channel;
 
 use image::{RgbImage, Rgb};
 
@@ -27,16 +26,14 @@ use raytracer::{Raytracer, Screen};
 
 //////////////////
 
-const RENDER_THREADS: usize = 8;
+const RENDER_THREADS: usize = 6;
 
-// TODO: more elegantly reimplement progress bar
-const PROGRESS_BAR_CHARS: usize = 32;
-static PROGRESS_ATOMIC: AtomicUsize = AtomicUsize::new(0);
+// TODO: reimplement a progress bar
 
 fn main() {
-	let raytracer = Raytracer { screen: Screen { width: 1280, height: 720 }, max_depth: 32, samples: 16 };
+	let raytracer = Raytracer { screen: Screen { width: 640, height: 360 }, max_depth: 32, samples: 16 };
 	
-	let image: Arc<Mutex<RgbImage>> = Arc::new(Mutex::new(RgbImage::new(raytracer.screen.width as u32, raytracer.screen.height as u32)));
+	let mut image: RgbImage = RgbImage::new(raytracer.screen.width as u32, raytracer.screen.height as u32);
 	
 	// let world = random_scene();
 	let mut world = World { objects: vec![
@@ -45,6 +42,7 @@ fn main() {
 		Object::new(Box::new(Sphere::new(Vec3::new_z(-1.0), 0.5)), Box::new(Metal { albedo: Color::new(0.25, 1.0, 0.5), fuzz: 0.125 })),
 		Object::new(Box::new(Sphere::new(Vec3::new_z(1.0), 0.5)), Box::new(Metal { albedo: Color::new(0.5, 0.25, 1.0), fuzz: 0.25 })),
 	], ..Default::default() };
+	
 	for i in -8..=8 {
 		for j in -8..=8 {
 			world.objects.push(Object::new(
@@ -58,6 +56,11 @@ fn main() {
 		}
 	}
 	
+	// Put world inside an Arc, to share it with threads.
+	// Don't need any mutation, it'll all be nice and fast.
+	let world = Arc::new(world);
+	
+	// Construct our camera.
 	let origin = Point3::new(13.0, 4.0, 3.0);
 	let look_at = Point3::ZERO;
 	let lens = CameraLens::new_from_dist(0.1, origin, look_at);
@@ -65,57 +68,42 @@ fn main() {
 	
 	let start_of_op = Instant::now();
 	
-	thread::scope(|s| {
-		let world_ref = &world;
+	let (tx, rx) = channel();
+	
+	for thread_no in 0..RENDER_THREADS {
+		let t_world = world.clone();
+		let tx = tx.clone();
 		
-		for thread_no in 0..RENDER_THREADS {
-			let image_ref = image.clone();
-			
-			s.spawn(move |_| {
-				for y in (0..raytracer.screen.height).rev() {
-					for x in (0..raytracer.screen.width).skip(thread_no).step_by(RENDER_THREADS) {
-						let pixel = raytracer.get_pixel(
-							world_ref, &camera,
-							x as Float / raytracer.screen.width as Float,
-							1.0 - (y as Float / raytracer.screen.height as Float)
-						);
-						
-						image_ref.lock().expect("Failed to access image.").put_pixel(x as u32, y as u32, Rgb(pixel.into()));
-					}
-					PROGRESS_ATOMIC.fetch_add(1, Ordering::Relaxed);
+		thread::spawn(move || {
+			for y in (0..raytracer.screen.height).rev().skip(thread_no).step_by(RENDER_THREADS) {
+				let yr = y as Float / raytracer.screen.height as Float;
+				
+				for x in 0..raytracer.screen.width {
+					let xr = x as Float / raytracer.screen.width as Float;
+					
+					let pixel = raytracer.get_pixel(&t_world, &camera, xr, 1.0 - yr);
+					
+					tx.send((x, y, pixel)).unwrap();
 				}
-			});
-		}
-		
-		s.spawn(move |_| {
-			let scr = raytracer.screen.height * RENDER_THREADS;
-			let mut progress_local = 0;
-			while progress_local < scr {
-				sleep(Duration::from_millis(100));
-				progress_local = PROGRESS_ATOMIC.load(Ordering::Relaxed);
-				print_console_progress_bar(progress_local, scr);
 			}
 		});
-	}).expect("Something broke.");
+	}
+	
+	// Not intending on making any other threads.
+	drop(tx);
+	
+	// Draw the picture
+	while let Ok((x, y, pixel)) = rx.recv() {
+		image.put_pixel(x as u32, y as u32, Rgb(pixel.into()));
+	}
+	
 	let duration = start_of_op.elapsed();
-	print_console_progress_bar(1, 1);
+	eprintln!("Done. Took {duration:.2?}.");
 	
-	// Note: the fancy \x1B[?C characters move the cursor forward ? characters.
-	// This sadly doesn't work on Windows Terminal, but that's because it sucks.
-	
-	eprint!("\r\x1B[{}C Saving...", PROGRESS_BAR_CHARS);
-	image.lock().expect("Could not access image to save! No!!!").save("output.png").unwrap();
-	
-	eprintln!("\r\x1B[{}C Done. Took {:.2?}.", PROGRESS_BAR_CHARS, duration);
-	sleep(Duration::from_secs(10));
+	image.save("output.png").expect("couldn't save...");
 }
 
-fn print_console_progress_bar(done: usize, max: usize) {
-	let percent_done = done as Float / max as Float;
-	let percent_done_int = (percent_done * PROGRESS_BAR_CHARS as Float).round() as usize;
-	eprint!("\r{}{} {:.2}%", "\u{2588}".repeat(percent_done_int), "\u{2592}".repeat(PROGRESS_BAR_CHARS - percent_done_int), percent_done * 100.0);
-}
-
+#[allow(dead_code)]
 fn random_scene() -> World {
 	let mut world = World { objects: Vec::new(), ..Default::default() };
 	
