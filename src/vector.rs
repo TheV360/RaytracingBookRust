@@ -163,7 +163,6 @@ impl Vec3 {
 		self - 2.0 * self.dot(other) * other
 	}
 	
-	// TODO: make this generic???
 	/// Interpolates between the vectors `self` and `other` by a factor `t`.
 	/// Linearly. Uhh. good documentation.
 	pub fn lerp(self, other: Self, t: Float) -> Self {

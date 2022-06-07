@@ -4,6 +4,7 @@ use crate::material::Material;
 
 use std::ops::Range;
 
+/// An Object is a [Hittable] shape with some [Material].
 pub struct Object {
 	pub solid: Box<dyn Hittable + Send + Sync>,
 	pub material: Box<dyn Material + Send + Sync>,
@@ -14,11 +15,15 @@ impl Object {
 	}
 }
 
+/// A World has a bunch of [Object]s.
 pub struct World {
 	pub objects: Vec<Object>,
 	pub sky_color: (Color, Color),
 }
 impl World {
+	/// Shoot a [Ray] out and have it react to [Object]s in the [World].
+	/// 
+	/// Returns which Object it hit, along with some [HitInfo].
 	pub fn hit(&self, ray: Ray, t_range: Range<Float>) -> Option<(&Object, HitInfo)> {
 		let mut tmp_hit: Option<(&Object, HitInfo)> = None;
 		let mut closest = t_range.end;

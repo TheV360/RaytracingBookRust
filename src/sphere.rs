@@ -25,8 +25,7 @@ impl Hittable for Sphere {
 		if discriminant > 0.0 {
 			let disc_root = Float::sqrt(discriminant);
 			
-			// TODO: this is still a bit ugly.
-			for sign in (-1..=1).step_by(2) {
+			for sign in [-1, 1] {
 				let t = disc_root.mul_add(sign as Float, -half_b) / a;
 				
 				if t_range.contains(&t) {
