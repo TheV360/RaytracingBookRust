@@ -1,4 +1,4 @@
-use crate::vector::{Vec3, Point3, Float};
+use crate::vector::{Vec2, Vec3, Point3, Float};
 use crate::ray::Ray;
 use crate::util;
 
@@ -55,7 +55,9 @@ impl Camera {
 	}
 	
 	/// Gets a normalized ray from the Camera's view.
-	pub fn get_ray(&self, s: Float, t: Float) -> Ray {
+	pub fn get_ray(&self, st: Vec2) -> Ray {
+		let (s, t) = st.into();
+		
 		if let Some(lens) = self.camera_lens {
 			let rd = lens.aperture / 2.0 * util::random_in_unit_disk();
 			let offset = self.u * rd.x + self.v * rd.y;
