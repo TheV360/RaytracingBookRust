@@ -8,4 +8,5 @@ edition = "2021"
 
 [dependencies]
 image = { version = "0.24.2", default_features = false, features = ["png"] }
-rand = "0.8.5"
+rand = "0.8.5" # -> randomized sampling, etc.
+paste = "1.0.7" # -> makes my vector macro look nicer

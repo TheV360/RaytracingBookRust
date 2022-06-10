@@ -28,10 +28,17 @@ use raytracer::Raytracer;
 
 const RENDER_THREADS: usize = 8;
 
+const UP: Vec3 = Vec3::ZERO.set_y(1.0);
+
 fn main() {
-	let raytracer = Raytracer { screen: (1920 / 2, 1080 / 2).into(), max_depth: 24, samples: 32 };
+	let raytracer = Raytracer {
+		screen: (1920 / 2, 1080 / 2).into(),
+		max_depth: 24, samples: 32
+	};
 	
-	let mut image = RgbImage::new(raytracer.screen.width as u32, raytracer.screen.height as u32);
+	let mut image = RgbImage::new(
+		raytracer.screen.width as u32, raytracer.screen.height as u32
+	);
 	
 	let world = basic_scene();
 	// let world = random_scene();
@@ -44,7 +51,13 @@ fn main() {
 	let origin = Point3::new(13.0, 4.0, 3.0);
 	let look_at = Point3::ZERO;
 	let lens = CameraLens::new_from_dist(0.1, origin, look_at);
-	let camera = Camera::new(origin, look_at, Vec3::new(0.0, 1.0, 0.0), 10.0, raytracer.screen.aspect_ratio(), Some(lens));
+	
+	let camera = Camera::new(
+		origin, look_at, UP,
+		10.0,
+		raytracer.screen.aspect_ratio(),
+		Some(lens)
+	);
 	
 	let start_of_op = Instant::now();
 	
@@ -117,7 +130,7 @@ fn basic_scene() -> World {
 	}
 	
 	world.objects.push(Object::new(
-		Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)),
+		Box::new(Sphere::new(Vec3::ZERO.set_z(-1.0), 0.5)),
 		Box::new(Metal { albedo: Color::new(1.0, 0.25, 0.5), fuzz: 0.125 })
 	));
 	world.objects.push(Object::new(
@@ -125,7 +138,7 @@ fn basic_scene() -> World {
 		Box::new(Metal { albedo: Color::new(0.25, 1.0, 0.5), fuzz: 0.0 })
 	));
 	world.objects.push(Object::new(
-		Box::new(Sphere::new(Vec3::new(0.0, 0.0, 1.0), 0.5)),
+		Box::new(Sphere::new(Vec3::ZERO.set_z(1.0), 0.5)),
 		Box::new(Metal { albedo: Color::new(0.5, 0.25, 1.0), fuzz: 0.25 })
 	));
 	// world.objects.push(Object::new(
@@ -145,6 +158,21 @@ fn random_scene() -> World {
 		Box::new(Lambertian { albedo: Color::all(0.5) })
 	));
 	
+	fn random_lambertian_mat() -> Lambertian {
+		let albedo = util::random_color() * util::random_color();
+		Lambertian { albedo }
+	}
+	
+	fn random_metal_mat() -> Metal {
+		let albedo = (util::random_color() + Color::ONE) / 2.0;
+		let fuzz = (util::random_float() + 1.0) / 2.0;
+		Metal { albedo, fuzz }
+	}
+	
+	fn random_dielectric_mat() -> Dielectric {
+		Dielectric { refractive_index: 1.5 }
+	}
+	
 	for a in -11..=11 {
 		for b in -11..=11 {
 			let center = Point3::new(
@@ -154,22 +182,16 @@ fn random_scene() -> World {
 			);
 			let shape = Sphere::new(center, 0.2);
 			
-			let choose_mat = util::random_float();
-			if choose_mat < 0.8 {
-				let albedo = util::random_color() * util::random_color();
-				
-				let material = Lambertian { albedo };
-				world.objects.push(Object::new(Box::new(shape), Box::new(material)));
-			} else if choose_mat < 0.95 {
-				let albedo = (util::random_color() + Color::ONE) / 2.0;
-				let fuzz = (util::random_float() + 1.0) / 2.0;
-				
-				let material = Metal { albedo, fuzz };
-				world.objects.push(Object::new(Box::new(shape), Box::new(material)));
-			} else {
-				let material = Dielectric { refractive_index: 1.5 };
-				world.objects.push(Object::new(Box::new(shape), Box::new(material)));
-			}
+			world.objects.push(Object::new(Box::new(shape), {
+				let choose_mat = util::random_float();
+				if choose_mat < 0.8 {
+					Box::new(random_lambertian_mat())
+				} else if choose_mat < 0.95 {
+					Box::new(random_metal_mat())
+				} else {
+					Box::new(random_dielectric_mat())
+				}
+			}));
 		}
 	}
 	

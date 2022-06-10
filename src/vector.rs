@@ -1,5 +1,7 @@
 use std::ops;
 
+use paste::paste;
+
 /// The `Float` type lets you easily switch between single-precision and double-precision float types.
 /// 
 /// If someone implements a higher-precision type, they could easily replace this type declaration with
@@ -35,18 +37,21 @@ macro_rules! vector_def {
 				Self { $($component: -self.$component,)+ }
 			}
 		}
+		
 		impl ops::Add for $vec_n {
 			type Output = Self;
 			fn add(self, other: Self) -> Self::Output {
 				Self { $($component: self.$component + other.$component,)+ }
 			}
 		}
+		
 		impl ops::Sub for $vec_n {
 			type Output = Self;
 			fn sub(self, other: Self) -> Self::Output {
 				Self { $($component: self.$component - other.$component,)+ }
 			}
 		}
+		
 		impl ops::Mul<Float> for $vec_n {
 			type Output = Self;
 			fn mul(self, other: Float) -> Self::Output {
@@ -65,6 +70,7 @@ macro_rules! vector_def {
 				Self { $($component: self.$component * other.$component,)+ }
 			}
 		}
+		
 		impl ops::Div<Float> for $vec_n {
 			type Output = Self;
 			fn div(self, other: Float) -> Self::Output {
@@ -114,14 +120,20 @@ macro_rules! vector_def {
 				$vec_n { $($component: val,)+ }
 			}
 			
-			// won't work without `paste!`.
+			paste! { $(
+				pub const fn [<set_ $component>](mut self, val: Float) -> Self {
+					self.$component = val; self
+				}
+			)+ }
+			
 			// $(/// Create a new Vector, replacing `$component` with
 			// pub const fn set_$component(mut self, val: Float) -> Self {
 			// 	self.$component = val; self
 			// }
 			// )+
 			// also may be useless. quiz: which one's shorter:
-			// let x = Vec3::new(0, y, 0);
+			// let x = Vec3::ZERO.set_y(y);
+			// let x = Vec3::new(0.0, y, 0.0);
 			// let x = Vec3::set_y(Vec3::ZERO, y);
 			
 			/// Get the dot product of `self` dot `other`.
@@ -174,21 +186,33 @@ macro_rules! vector_def {
 			}
 		}
 		
-		impl From<$vec_n> for ( $(replace_type!($component Float),)+ ) {
-			fn from(v: $vec_n) -> Self { ( $(v.$component,)+ ) }
-		}
-		impl From<( $(replace_type!($component Float),)+ )> for $vec_n {
-			fn from(( $($component,)+ ): ( $(replace_type!($component Float),)+ )) -> Self {
-				$vec_n { $($component,)+ }
+		// Conversion to/from Tuples
+		// `assert_eq!( (1, 2, 3).into(), Vec3::new(1, 2, 3) );`
+		paste! {
+			type [<$vec_n AsTuple>] = ( $(replace_type!($component Float),)+ );
+		
+			impl From<$vec_n> for [<$vec_n AsTuple>] {
+				fn from(v: $vec_n) -> Self { ( $(v.$component,)+ ) }
+			}
+			impl From<[<$vec_n AsTuple>]> for $vec_n {
+				fn from(( $($component,)+ ): [<$vec_n AsTuple>]) -> Self {
+					$vec_n { $($component,)+ }
+				}
 			}
 		}
 		
-		impl From<$vec_n> for [Float; count_tts!($($component)+)] {
-			fn from(v: $vec_n) -> Self { [ $(v.$component,)+ ] }
-		}
-		impl From<[Float; count_tts!($($component)+)]> for $vec_n {
-			fn from([ $($component,)+ ]: [Float; count_tts!($($component)+)]) -> Self {
-				$vec_n { $($component,)+ }
+		// Conversion to/from Arrays
+		// `assert_eq!( [1, 2, 3].into(), Vec3::new(1, 2, 3) );`
+		paste! {
+			type [<$vec_n AsArray>] = [Float; count_tts!($($component)+)];
+			
+			impl From<$vec_n> for [<$vec_n AsArray>] {
+				fn from(v: $vec_n) -> Self { [ $(v.$component,)+ ] }
+			}
+			impl From<[<$vec_n AsArray>]> for $vec_n {
+				fn from([ $($component,)+ ]: [<$vec_n AsArray>]) -> Self {
+					$vec_n { $($component,)+ }
+				}
 			}
 		}
 	};
