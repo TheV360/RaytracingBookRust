@@ -25,6 +25,7 @@ macro_rules! count_tts {
 macro_rules! vector_def {
 	($pub:vis struct $vec_n:ident { $($component:ident),+ }) => {
 		#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, Default)]
+		#[repr(C)]
 		$pub struct $vec_n {
 			$(pub $component: Float,)+
 		}
@@ -124,14 +125,16 @@ macro_rules! vector_def {
 				pub const fn [<set_ $component>](mut self, val: Float) -> Self {
 					self.$component = val; self
 				}
+				
+				pub const [<$component:upper>]: Self = Self::ZERO.[<set_ $component>](1.0);
 			)+ }
 			
-			// $(/// Create a new Vector, replacing `$component` with
-			// pub const fn set_$component(mut self, val: Float) -> Self {
-			// 	self.$component = val; self
-			// }
-			// )+
-			// also may be useless. quiz: which one's shorter:
+			paste! { pub const AXES: [Self; count_tts!($($component)+)] = [
+				$(Self::[< $component:upper>],)+
+			]; }
+			
+			// quiz: which one's shorter:
+			// let x = Vec3::Y * 2.0;
 			// let x = Vec3::ZERO.set_y(y);
 			// let x = Vec3::new(0.0, y, 0.0);
 			// let x = Vec3::set_y(Vec3::ZERO, y);

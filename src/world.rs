@@ -1,5 +1,6 @@
 use crate::vector::{Color, Float};
-use crate::ray::{Ray, HitInfo, Hittable};
+use crate::ray::{Ray, HitInfo};
+use crate::solid::Hittable;
 use crate::material::Material;
 
 use std::ops::Range;

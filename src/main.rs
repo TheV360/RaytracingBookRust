@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::sync::Arc;
 use std::time::Instant;
 use std::thread;
@@ -8,20 +9,23 @@ use image::{RgbImage, Rgb};
 
 //////////////////
 
-mod vector;
-mod ray;
 mod util;
+mod vector;
+
+mod ray;
+
+mod solid;
 mod material;
 mod world;
+
 mod camera;
-mod sphere;
 mod raytracer;
 
 use vector::{Float, Vec2, Vec3, Point3, Color};
 use material::{Lambertian, Metal, Dielectric};
 use world::{World, Object};
 use camera::{Camera, CameraLens};
-use sphere::Sphere;
+use solid::sphere::Sphere;
 use raytracer::Raytracer;
 
 //////////////////
@@ -89,14 +93,25 @@ fn main() {
 	let mut pixels_plotted = 0usize;
 	let total_pixels = raytracer.screen.width * raytracer.screen.height;
 	
-	// Draw the picture
-	while let Ok((x, y, pixel)) = rx.recv() {
-		image.put_pixel(x as u32, y as u32, Rgb(pixel.into()));
+	{
 		
-		pixels_plotted += 1;
-		if pixels_plotted & 0xFFF == 0 { // (every so often)
-			eprint!("\r{:6.2}% done.", (pixels_plotted as f64 / total_pixels as f64) * 100.0);
+		// Lock everyone else out of the stdout.
+		let stderr_handle = std::io::stderr();
+		let mut stderr_lock = stderr_handle.lock();
+		
+		// Warning!!! If another thread tries to print something,
+		// it will deadlock the application!!
+		
+		// Draw the picture
+		while let Ok((x, y, pixel)) = rx.recv() {
+			image.put_pixel(x as u32, y as u32, Rgb(pixel.into()));
+			
+			pixels_plotted += 1;
+			if pixels_plotted & 0xFFF == 0 { // (every so often)
+				write!(&mut stderr_lock, "\r{:6.2}% done.", (pixels_plotted as f64 / total_pixels as f64) * 100.0).expect("trying to write to stderr failed!!");
+			}
 		}
+		
 	}
 	
 	let duration = start_of_op.elapsed();
@@ -130,7 +145,7 @@ fn basic_scene() -> World {
 	}
 	
 	world.objects.push(Object::new(
-		Box::new(Sphere::new(Vec3::ZERO.set_z(-1.0), 0.5)),
+		Box::new(Sphere::new(-Vec3::Z, 0.5)),
 		Box::new(Metal { albedo: Color::new(1.0, 0.25, 0.5), fuzz: 0.125 })
 	));
 	world.objects.push(Object::new(
@@ -138,7 +153,7 @@ fn basic_scene() -> World {
 		Box::new(Metal { albedo: Color::new(0.25, 1.0, 0.5), fuzz: 0.0 })
 	));
 	world.objects.push(Object::new(
-		Box::new(Sphere::new(Vec3::ZERO.set_z(1.0), 0.5)),
+		Box::new(Sphere::new( Vec3::Z, 0.5)),
 		Box::new(Metal { albedo: Color::new(0.5, 0.25, 1.0), fuzz: 0.25 })
 	));
 	// world.objects.push(Object::new(

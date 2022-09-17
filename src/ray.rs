@@ -1,12 +1,8 @@
 use crate::vector::{Vec3, Point3, Float};
 
-use std::ops::Range;
-
 /// You know it from geometry class, it's a Ray!!!
 /// 
 /// Has a position and a direction.
-/// I hope the direction is normalized...
-// TODO: check if direction is normalized
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug)]
 pub struct Ray {
 	pub position: Point3,
@@ -36,11 +32,4 @@ impl HitInfo {
 		
 		(front_face, normal)
 	}
-}
-
-/// The `Hittable` trait encompasses all things that can be hit by a [Ray].
-/// If some object implements the `Hittable` trait, then it can easily be
-/// drawn in the world with an associated [Material].
-pub trait Hittable {
-	fn ray_hits(&self, t_range: Range<Float>, ray: Ray) -> Option<HitInfo>;
 }

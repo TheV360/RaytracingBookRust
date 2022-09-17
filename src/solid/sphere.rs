@@ -1,5 +1,7 @@
 use crate::vector::{Vec3, Point3, Float};
-use crate::ray::{Ray, HitInfo, Hittable};
+use crate::ray::{Ray, HitInfo};
+
+use super::Hittable;
 
 use std::ops::Range;
 
